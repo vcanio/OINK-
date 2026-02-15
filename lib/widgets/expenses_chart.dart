@@ -2,6 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../theme/app_theme.dart';
+import '../utils/constants.dart';
+import '../utils/app_styles.dart';
 
 class ExpensesChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -29,18 +32,18 @@ class ExpensesChart extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: AppConstants.elevationM,
+      margin: const EdgeInsets.all(AppConstants.paddingM),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusL)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppConstants.paddingM),
         child: Column(
           children: [
-             const Text(
+             Text(
               'Gastos por Categoría',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: AppStyles.heading3,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppConstants.paddingL),
             SizedBox(
               height: 200,
               child: PieChart(
@@ -69,7 +72,7 @@ class ExpensesChart extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppConstants.paddingL),
             // Legend
             Wrap(
               spacing: 16,
@@ -91,7 +94,7 @@ class ExpensesChart extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(category.name),
+                    Text(category.name, style: AppStyles.bodyMedium),
                   ],
                 );
               }).toList(),

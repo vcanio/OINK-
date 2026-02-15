@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 import 'add_transaction_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -26,13 +28,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingM, vertical: AppConstants.paddingS),
             child: TextField(
               decoration: InputDecoration(
                 hintText: "Buscar...",
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
@@ -53,13 +55,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingM, vertical: AppConstants.paddingS),
             child: Row(
               children: [
                 _buildFilterChip("Todos", 'all'),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppConstants.paddingS),
                 _buildFilterChip("Ingresos", 'income'),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppConstants.paddingS),
                 _buildFilterChip("Gastos", 'expense'),
               ],
             ),
@@ -81,13 +83,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text("🔍", style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppConstants.paddingM),
                         Text(
                           "No se encontraron movimientos",
-                          style: GoogleFonts.nunito(
-                            color: Colors.grey.shade400,
-                            fontSize: 16,
-                          ),
+                          style: AppStyles.bodyLarge.copyWith(color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
@@ -95,7 +94,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppConstants.paddingM),
                   itemCount: transactions.length,
                   itemBuilder: (context, index) {
                     final tx = transactions[index];
@@ -108,8 +107,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
-                        color: Colors.red.shade100,
-                        child: const Icon(Icons.delete, color: Colors.red),
+                        color: AppTheme.errorColor.withOpacity(0.1),
+                        child: const Icon(Icons.delete, color: AppTheme.errorColor),
                       ),
                       confirmDismiss: (direction) async {
                         return await showDialog(
@@ -121,7 +120,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true), 
-                                child: const Text("Borrar", style: TextStyle(color: Colors.red)),
+                                child: Text("Borrar", style: TextStyle(color: AppTheme.errorColor)),
                               ),
                             ],
                           ),
@@ -144,18 +143,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.02),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
+                          padding: const EdgeInsets.all(AppConstants.paddingM),
+                          decoration: AppStyles.cardDecoration,
                           child: Row(
                             children: [
                               Container(
@@ -171,45 +160,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   style: const TextStyle(fontSize: 24),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: AppConstants.paddingM),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       category.name,
-                                      style: GoogleFonts.nunito(
+                                      style: AppStyles.bodyLarge.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors.black87,
+                                        color: AppTheme.textPrimary,
                                       ),
                                     ),
                                     if (tx.description.isNotEmpty)
                                       Text(
                                         tx.description,
-                                        style: GoogleFonts.nunito(
-                                          color: Colors.grey.shade500,
-                                          fontSize: 14,
-                                        ),
+                                        style: AppStyles.bodyMedium,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      Text(
-                                    DateFormat.MMMd('es_CL').format(tx.date),
-                                    style: GoogleFonts.nunito(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 12,
+                                    Text(
+                                      DateFormat.MMMd('es_CL').format(tx.date),
+                                      style: AppStyles.label,
                                     ),
-                                  ),
                                   ],
                                 ),
                               ),
                               Text(
-                                "${tx.type == 'expense' ? '-' : '+'}${formatter.format(tx.amount)}",
-                                style: GoogleFonts.nunito(
+                                "${tx.isExpense ? '-' : '+'}${formatter.format(tx.amount)}",
+                                style: AppStyles.bodyLarge.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: tx.type == 'expense' ? const Color(0xFFE57373) : const Color(0xFF81C784),
+                                  color: tx.isExpense ? AppTheme.errorColor : Colors.green,
                                 ),
                               ),
                             ],
@@ -238,18 +219,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
       },
       backgroundColor: Colors.white,
-      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-      labelStyle: GoogleFonts.nunito(
-        color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
+      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      labelStyle: AppStyles.label.copyWith(
+        color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300,
+          color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
         ),
       ),
-      checkmarkColor: Theme.of(context).primaryColor,
+      checkmarkColor: AppTheme.primaryColor,
     );
   }
 }

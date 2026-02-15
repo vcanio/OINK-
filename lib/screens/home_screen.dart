@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../providers/transaction_provider.dart';
+import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../widgets/expenses_chart.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,15 +18,12 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initial load of data
     Future.microtask(() =>
-        Provider.of<TransactionProvider>(context, listen: false).loadTransactions());
+        Provider.of<OinkProvider>(context, listen: false).loadTransactions());
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('OINK!', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFFB6C1), // Pink
-        foregroundColor: Colors.white,
-        centerTitle: true,
+        title: const Text('OINK!'),
         leading: const Icon(Icons.savings), // Piggy bank icon approximation
       ),
       body: const Padding(
@@ -49,7 +49,7 @@ class ExpensesChartWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = context.watch<TransactionProvider>().transactions;
+    final transactions = context.watch<OinkProvider>().transactions;
     return ExpensesChart(transactions: transactions);
   }
 }
@@ -59,27 +59,27 @@ class SaldoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balance = context.select<TransactionProvider, double>((p) => p.totalBalance);
+    final balance = context.select<OinkProvider, double>((p) => p.totalBalance);
     // Remove decimals for CLP
     final currencyFormat = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: const Color(0xFFFFD700), // Gold
+      elevation: AppConstants.elevationM,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusL)),
+      color: AppTheme.secondaryColor, // Gold
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppConstants.paddingL),
         child: Column(
           children: [
-            const Text(
+             Text(
               'Saldo Total',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black54),
+              style: AppStyles.bodyLarge.copyWith(color: Colors.black54, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppConstants.paddingS),
             Text(
               currencyFormat.format(balance),
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: AppStyles.moneyBig.copyWith(color: Colors.black87),
             ),
           ],
         ),
@@ -137,7 +137,7 @@ class _TransactionFormState extends State<TransactionForm> {
       categoryId: _selectedCategoryId,
     );
 
-    Provider.of<TransactionProvider>(context, listen: false).addTransaction(transaction);
+    Provider.of<OinkProvider>(context, listen: false).addTransaction(transaction);
 
     _descriptionController.clear();
     _amountController.clear();
@@ -147,10 +147,10 @@ class _TransactionFormState extends State<TransactionForm> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: AppConstants.elevationS,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusM)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppConstants.paddingM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -162,7 +162,7 @@ class _TransactionFormState extends State<TransactionForm> {
                     decoration: const InputDecoration(labelText: 'Descripción'),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppConstants.paddingS),
                 Expanded(
                   child: TextField(
                     controller: _amountController,
@@ -198,7 +198,7 @@ class _TransactionFormState extends State<TransactionForm> {
                   });
                 },
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppConstants.paddingM),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -212,7 +212,7 @@ class _TransactionFormState extends State<TransactionForm> {
                           _isExpense = value;
                         });
                       },
-                      activeColor: Colors.redAccent,
+                      activeColor: AppTheme.errorColor,
                       inactiveThumbColor: Colors.green,
                       inactiveTrackColor: Colors.green.withOpacity(0.5),
                     ),
@@ -220,7 +220,7 @@ class _TransactionFormState extends State<TransactionForm> {
                       _isExpense ? 'Gasto' : 'Ingreso',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: _isExpense ? Colors.redAccent : Colors.green,
+                        color: _isExpense ? AppTheme.errorColor : Colors.green,
                       ),
                     ),
                   ],
@@ -228,7 +228,7 @@ class _TransactionFormState extends State<TransactionForm> {
                 ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
+                    backgroundColor: AppTheme.textPrimary,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Agregar'),
@@ -247,7 +247,7 @@ class TransactionSliverList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = context.watch<TransactionProvider>().transactions;
+    final transactions = context.watch<OinkProvider>().transactions;
     // Remove decimals for CLP
     final currencyFormat = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
 
@@ -255,7 +255,7 @@ class TransactionSliverList extends StatelessWidget {
       return const SliverToBoxAdapter(
         child: Center(
           child: Padding(
-            padding: EdgeInsets.all(20.0),
+            padding: EdgeInsets.all(AppConstants.paddingL),
             child: Text('No hay transacciones aún.'),
           ),
         ),
@@ -282,7 +282,7 @@ class TransactionSliverList extends StatelessWidget {
                     : Colors.green,
                 ),
               ),
-              title: Text(tx.description, style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(tx.description, style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
               subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(tx.date)),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -291,14 +291,14 @@ class TransactionSliverList extends StatelessWidget {
                     (tx.isExpense ? '- ' : '+ ') + currencyFormat.format(tx.amount),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: tx.isExpense ? Colors.red : Colors.green,
+                      color: tx.isExpense ? AppTheme.errorColor : Colors.green,
                       fontSize: 16,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.grey),
+                    icon: const Icon(Icons.delete, color: AppTheme.textSecondary),
                     onPressed: () {
-                      context.read<TransactionProvider>().deleteTransaction(tx.id);
+                      context.read<OinkProvider>().deleteTransaction(tx.id);
                     },
                   ),
                 ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
 import 'dashboard_screen.dart';
 import 'history_screen.dart';
 import 'reports_screen.dart';
@@ -71,11 +73,11 @@ class _MainScreenState extends State<MainScreen> {
           onTap: _onTabTapped,
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFFFF85A2),
-          unselectedItemColor: Colors.grey.shade400,
+          selectedItemColor: AppTheme.primaryColor,
+          unselectedItemColor: AppTheme.textSecondary,
           showUnselectedLabels: true,
-          selectedLabelStyle: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: GoogleFonts.nunito(fontWeight: FontWeight.w600, fontSize: 12),
+          selectedLabelStyle: AppStyles.label.copyWith(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: AppStyles.label.copyWith(fontWeight: FontWeight.w600),
           items: [
             const BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -88,18 +90,14 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFF85A2), Color(0xFFFFC107)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0x40FF85A2),
+                      color: AppTheme.primaryColor.withOpacity(0.4),
                       blurRadius: 8,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),

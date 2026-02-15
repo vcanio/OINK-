@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 import 'settings_screen.dart';
 
@@ -47,61 +49,82 @@ class DashboardScreen extends StatelessWidget {
               // Balance Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                height: 220, // Give it a fixed height for the card look
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF85A2), Color(0xFFFFC107)], // Pink to Gold
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppTheme.primaryColor, // Solid Pink
+                  borderRadius: BorderRadius.circular(AppConstants.radiusXL),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF85A2).withOpacity(0.4),
+                      color: AppTheme.primaryColor.withOpacity(0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Stack(
                   children: [
-                    Text(
-                      "Balance Total",
-                      style: GoogleFonts.nunito(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    // Watermark Icon
+                    Positioned(
+                      right: -20,
+                      bottom: -20,
+                      child: Transform.rotate(
+                        angle: -0.2, // Slight tilt
+                        child: Icon(
+                          Icons.savings_rounded,
+                          size: 180,
+                          color: Colors.white.withOpacity(0.15),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      formatter.format(balance),
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
+                    // Card Content
+                    Padding(
+                      padding: const EdgeInsets.all(AppConstants.paddingL),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Balance Total",
+                                style: AppStyles.bodyLarge.copyWith(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: AppConstants.paddingS),
+                              Text(
+                                formatter.format(balance),
+                                style: AppStyles.moneyBig.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildSummaryItem(
+                                label: "Ingresos",
+                                amount: formatter.format(provider.totalIncome),
+                                icon: Icons.arrow_upward_rounded,
+                                color: Colors.green.shade100,
+                                textColor: Colors.white,
+                              ),
+                              _buildSummaryItem(
+                                label: "Gastos",
+                                amount: formatter.format(provider.totalExpenses),
+                                icon: Icons.arrow_downward_rounded,
+                                color: Colors.red.shade100,
+                                textColor: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildSummaryItem(
-                          label: "Ingresos",
-                          amount: formatter.format(provider.totalIncome),
-                          icon: Icons.arrow_upward_rounded,
-                          color: Colors.green.shade100,
-                          textColor: Colors.white,
-                        ),
-                        _buildSummaryItem(
-                          label: "Gastos",
-                          amount: formatter.format(provider.totalExpenses),
-                          icon: Icons.arrow_downward_rounded,
-                          color: Colors.red.shade100,
-                          textColor: Colors.white,
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -115,19 +138,15 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     "Últimos movimientos",
-                    style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: AppStyles.heading2,
                   ),
                   TextButton(
                     onPressed: onSeeAllPressed,
                     child: Text(
                       "Ver todo",
-                      style: GoogleFonts.nunito(
+                      style: AppStyles.bodyLarge.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                   ),
@@ -146,12 +165,11 @@ class DashboardScreen extends StatelessWidget {
                         "🐷",
                         style: TextStyle(fontSize: 64, color: Colors.grey.shade300),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppConstants.paddingM),
                       Text(
                         "No hay movimientos aún",
-                        style: GoogleFonts.nunito(
-                          color: Colors.grey.shade400,
-                          fontSize: 16,
+                        style: AppStyles.bodyLarge.copyWith(
+                          color: AppTheme.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -197,19 +215,15 @@ class DashboardScreen extends StatelessWidget {
                             children: [
                               Text(
                                 category.name,
-                                style: GoogleFonts.nunito(
+                                style: AppStyles.bodyLarge.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black87,
+                                  color: AppTheme.textPrimary,
                                 ),
                               ),
                               if (tx.description.isNotEmpty)
                                 Text(
                                   tx.description,
-                                  style: GoogleFonts.nunito(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 14,
-                                  ),
+                                  style: AppStyles.bodyMedium,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -220,19 +234,15 @@ class DashboardScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              "${tx.type == 'expense' ? '-' : '+'}${formatter.format(tx.amount)}",
-                              style: GoogleFonts.nunito(
+                              "${tx.isExpense ? '-' : '+'}${formatter.format(tx.amount)}",
+                              style: AppStyles.bodyLarge.copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: tx.type == 'expense' ? const Color(0xFFE57373) : const Color(0xFF81C784),
+                                color: tx.isExpense ? AppTheme.errorColor : Colors.green,
                               ),
                             ),
                             Text(
                               DateFormat.MMMd('es_CL').format(tx.date),
-                              style: GoogleFonts.nunito(
-                                color: Colors.grey.shade400,
-                                fontSize: 12,
-                              ),
+                              style: AppStyles.label,
                             ),
                           ],
                         ),
@@ -272,17 +282,14 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.nunito(
+              style: AppStyles.label.copyWith(
                 color: textColor.withOpacity(0.8),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
               ),
             ),
             Text(
               amount,
-              style: GoogleFonts.nunito(
+              style: AppStyles.bodyLarge.copyWith(
                 color: textColor,
-                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),

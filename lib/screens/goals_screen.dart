@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import '../providers/oink_provider.dart';
 import '../models/savings_goal.dart';
 import '../models/transaction.dart';
 import '../utils/formatters.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -21,7 +24,7 @@ class GoalsScreen extends StatelessWidget {
         onPressed: () => _showAddGoalDialog(context),
         label: const Text("Nueva Meta"),
         icon: const Icon(Icons.add),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
       body: Consumer<OinkProvider>(
@@ -35,22 +38,15 @@ class GoalsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text("🎯", style: TextStyle(fontSize: 48)),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppConstants.paddingM),
                   Text(
                     "No tienes metas aún",
-                    style: GoogleFonts.nunito(
-                      color: Colors.grey.shade400,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppStyles.heading3.copyWith(color: AppTheme.textSecondary),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppConstants.paddingS),
                   Text(
                     "¡Crea una para empezar a ahorrar!",
-                    style: GoogleFonts.nunito(
-                      color: Colors.grey.shade400,
-                      fontSize: 14,
-                    ),
+                    style: AppStyles.bodyMedium,
                   ),
                 ],
               ),
@@ -72,8 +68,8 @@ class GoalsScreen extends StatelessWidget {
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
-                  color: Colors.red.shade100,
-                  child: const Icon(Icons.delete, color: Colors.red),
+                  color: AppTheme.errorColor.withOpacity(0.1),
+                  child: const Icon(Icons.delete, color: AppTheme.errorColor),
                 ),
                 confirmDismiss: (direction) async {
                   return await showDialog(
@@ -85,7 +81,7 @@ class GoalsScreen extends StatelessWidget {
                         TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true), 
-                          child: const Text("Borrar", style: TextStyle(color: Colors.red)),
+                          child: Text("Borrar", style: TextStyle(color: AppTheme.errorColor)),
                         ),
                       ],
                     ),
@@ -98,18 +94,8 @@ class GoalsScreen extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  padding: const EdgeInsets.all(AppConstants.paddingM),
+                  decoration: AppStyles.cardDecoration,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -121,26 +107,20 @@ class GoalsScreen extends StatelessWidget {
                               color: Color(goal.color).withOpacity(0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.savings_rounded, color: Colors.orange), // Could be custom icon
+                            child: const Icon(Icons.savings_rounded, color: Colors.teal), // Could be custom icon
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppConstants.paddingM),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   goal.name,
-                                  style: GoogleFonts.nunito(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                                  style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   "Meta: ${formatter.format(goal.targetAmount)}",
-                                  style: GoogleFonts.nunito(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 14,
-                                  ),
+                                  style: AppStyles.bodyMedium,
                                 ),
                               ],
                             ),
@@ -149,9 +129,9 @@ class GoalsScreen extends StatelessWidget {
                             const Text("🎉", style: TextStyle(fontSize: 24)),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppConstants.paddingM),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusS),
                         child: LinearProgressIndicator(
                           value: progress.clamp(0.0, 1.0),
                           minHeight: 8,
@@ -159,27 +139,24 @@ class GoalsScreen extends StatelessWidget {
                           valueColor: AlwaysStoppedAnimation<Color>(Color(goal.color)),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppConstants.paddingS),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             formatter.format(goal.savedAmount),
-                            style: GoogleFonts.nunito(
+                            style: AppStyles.bodyLarge.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Color(goal.color),
                             ),
                           ),
                           Text(
                             "${(progress * 100).toStringAsFixed(0)}%",
-                            style: GoogleFonts.nunito(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade500,
-                            ),
+                            style: AppStyles.label,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppConstants.paddingM),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -193,7 +170,7 @@ class GoalsScreen extends StatelessWidget {
                             foregroundColor: Color(goal.color),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppConstants.radiusM),
                             ),
                           ),
                         ),
@@ -218,7 +195,7 @@ class GoalsScreen extends StatelessWidget {
       Colors.blue,
       Colors.green,
       Colors.purple,
-      Colors.orange,
+      Colors.teal,
       Colors.pink,
       Colors.teal,
       Colors.redAccent,

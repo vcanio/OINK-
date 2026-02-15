@@ -20,6 +20,8 @@ class Transaction {
     required this.createdAt,
   });
 
+  bool get isExpense => type == 'expense';
+
   factory Transaction.create({
     required double amount,
     required String type,

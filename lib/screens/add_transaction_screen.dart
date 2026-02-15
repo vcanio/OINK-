@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../utils/formatters.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final Transaction? transaction;
@@ -112,10 +115,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             onPressed: _saveTransaction,
             child: Text(
               "Guardar",
-              style: GoogleFonts.nunito(
+              style: AppStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Theme.of(context).primaryColor,
+                color: AppTheme.primaryColor,
               ),
             ),
           ),
@@ -124,7 +127,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       body: Column(
         children: [
           // Toggle Type
-          const SizedBox(height: 16),
+          const SizedBox(height: AppConstants.paddingM),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(4),
@@ -149,8 +152,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               children: [
                 Text(
                   "Monto",
-                  style: GoogleFonts.nunito(
-                    color: Colors.grey.shade500,
+                  style: AppStyles.label.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -162,10 +164,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ThousandsSeparatorInputFormatter(),
                   ],
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
-                    color: _type == 'expense' ? Colors.red.shade400 : Colors.green.shade400,
+                  style: AppStyles.moneyBig.copyWith(
+                    color: _type == 'expense' ? AppTheme.errorColor : Colors.green.shade400,
                   ),
                   decoration: const InputDecoration(
                     prefixText: "\$",
@@ -370,9 +370,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: GoogleFonts.nunito(
+          style: AppStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.bold,
-            color: isSelected ? color : Colors.grey.shade500,
+            color: isSelected ? color : AppTheme.textSecondary,
           ),
         ),
       ),

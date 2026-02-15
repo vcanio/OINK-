@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,6 +11,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/savings_goal.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 
 class SettingsScreen extends StatelessWidget {
@@ -77,7 +80,7 @@ class SettingsScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.nunito(
+        style: AppStyles.label.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.bold,
           color: Colors.grey.shade500,
@@ -92,21 +95,11 @@ class SettingsScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    Color color = Colors.black87,
+    Color color = AppTheme.textPrimary,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: AppStyles.cardDecoration,
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
@@ -118,17 +111,17 @@ class SettingsScreen extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: GoogleFonts.nunito(
+          style: AppStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: GoogleFonts.nunito(color: Colors.grey.shade500),
+          style: AppStyles.bodyMedium,
         ),
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusM)),
       ),
     );
   }

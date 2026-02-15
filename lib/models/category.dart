@@ -27,7 +27,7 @@ final List<Category> defaultCategories = [
   const Category(id: 'home', name: 'Hogar', icon: '🏠', color: 0xFF795548, type: 'expense'),
   const Category(id: 'clothing', name: 'Ropa', icon: '👕', color: 0xFFE91E63, type: 'expense'),
   const Category(id: 'services', name: 'Servicios', icon: '📱', color: 0xFF00BCD4, type: 'expense'),
-  const Category(id: 'savings', name: 'Ahorro', icon: '🐷', color: 0xFFFFC107, type: 'expense'),
+  const Category(id: 'savings', name: 'Ahorro', icon: '🐷', color: 0xFF26A69A, type: 'expense'),
   const Category(id: 'gift_expense', name: 'Regalos', icon: '🎁', color: 0xFFE91E63, type: 'expense'),
   const Category(id: 'other_expense', name: 'Otros', icon: '📦', color: 0xFF607D8B, type: 'expense'),
   
@@ -35,5 +35,5 @@ final List<Category> defaultCategories = [
   const Category(id: 'salary', name: 'Sueldo', icon: '💰', color: 0xFF4CAF50, type: 'income'),
   const Category(id: 'freelance', name: 'Freelance', icon: '💻', color: 0xFF2196F3, type: 'income'),
   const Category(id: 'gift', name: 'Regalo', icon: '🎁', color: 0xFFE91E63, type: 'income'),
-  const Category(id: 'other_income', name: 'Otros', icon: '✨', color: 0xFFFFC107, type: 'income'),
+  const Category(id: 'other_income', name: 'Otros', icon: '✨', color: 0xFF26A69A, type: 'income'),
 ];

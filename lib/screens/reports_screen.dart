@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/oink_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../theme/app_theme.dart';
+import '../utils/app_styles.dart';
+import '../utils/constants.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -83,13 +85,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   IconButton(onPressed: _prevMonth, icon: const Icon(Icons.chevron_left)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingM),
                     child: Text(
                       DateFormat.yMMMM('es_CL').format(_selectedDate).toUpperCase(),
-                      style: GoogleFonts.nunito(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppStyles.heading3,
                     ),
                   ),
                   IconButton(
@@ -132,7 +131,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     padding: const EdgeInsets.all(32),
                     child: Text(
                       "No hay gastos este mes",
-                      style: GoogleFonts.nunito(color: Colors.grey),
+                      style: AppStyles.bodyLarge.copyWith(color: AppTheme.textSecondary),
                     ),
                   ),
                 )
@@ -186,11 +185,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ),
                           child: Text(category.icon),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppConstants.paddingM),
                         Expanded(
                           child: Text(
                             category.name,
-                            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                         Column(
@@ -198,11 +197,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           children: [
                             Text(
                               formatter.format(entry.value),
-                              style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                              style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               "$percentage%",
-                              style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey),
+                              style: AppStyles.label,
                             ),
                           ],
                         ),
@@ -220,37 +219,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildSummaryCard(String title, String amount, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(AppConstants.paddingM),
+      decoration: AppStyles.cardDecoration.copyWith(
         border: Border(left: BorderSide(color: color, width: 4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: GoogleFonts.nunito(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppStyles.label,
           ),
           const SizedBox(height: 4),
           Text(
             amount,
-            style: GoogleFonts.nunito(
-              color: Colors.black87,
-              fontSize: 16,
+            style: AppStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
         ],
