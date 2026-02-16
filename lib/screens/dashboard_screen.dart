@@ -20,7 +20,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("OINK!"),
+        title: const Text("OINK!", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24)),
         centerTitle: false,
         actions: [
           IconButton(
@@ -32,10 +32,7 @@ class DashboardScreen extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Text("🐷", style: TextStyle(fontSize: 24)),
-            onPressed: () {}, // Maybe easter egg?
-          ),
+
         ],
       ),
       body: Consumer<OinkProvider>(

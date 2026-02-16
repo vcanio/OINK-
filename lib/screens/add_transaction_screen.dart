@@ -117,8 +117,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               "Guardar",
               style: AppStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.white,
+                  fontSize: 16,
+                color: AppTheme.primaryColor,
               ),
             ),
           ),

@@ -53,16 +53,17 @@ class AppTheme {
 
       // App Bar
       appBarTheme: AppBarTheme(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        foregroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
+        scrolledUnderElevation: 0,
         titleTextStyle: GoogleFonts.nunito(
           fontSize: 20, 
           fontWeight: FontWeight.bold, 
-          color: Colors.white
+          color: primaryColor,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: primaryColor),
       ),
 
       // Cards
