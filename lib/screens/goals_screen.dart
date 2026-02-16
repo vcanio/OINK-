@@ -30,7 +30,7 @@ class GoalsScreen extends StatelessWidget {
       body: Consumer<OinkProvider>(
         builder: (context, provider, child) {
           final goals = provider.savingsGoals;
-          final formatter = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+          final formatter = AppFormatters.currency;
 
           if (goals.isEmpty) {
             return Center(

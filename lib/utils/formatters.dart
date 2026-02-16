@@ -22,3 +22,12 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
     );
   }
 }
+
+class AppFormatters {
+  static NumberFormat get currency => NumberFormat.currency(
+    locale: 'es_CL', 
+    symbol: '\$', 
+    decimalDigits: 0,
+    customPattern: '\$ #,###'
+  );
+}

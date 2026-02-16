@@ -7,6 +7,7 @@ import '../models/category.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
 import '../utils/constants.dart';
+import '../utils/formatters.dart';
 
 import 'settings_screen.dart';
 
@@ -41,7 +42,7 @@ class DashboardScreen extends StatelessWidget {
         builder: (context, provider, child) {
           final transactions = provider.transactions;
           final balance = provider.totalBalance;
-          final formatter = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+          final formatter = AppFormatters.currency;
 
           return ListView(
             padding: const EdgeInsets.all(16),

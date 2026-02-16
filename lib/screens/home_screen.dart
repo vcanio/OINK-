@@ -9,7 +9,9 @@ import '../models/category.dart';
 import '../widgets/expenses_chart.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
+import '../utils/formatters.dart';
 import '../utils/constants.dart';
+import '../utils/formatters.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -61,7 +63,7 @@ class SaldoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final balance = context.select<OinkProvider, double>((p) => p.totalBalance);
     // Remove decimals for CLP
-    final currencyFormat = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+    final currencyFormat = AppFormatters.currency;
 
     return Card(
       elevation: AppConstants.elevationM,
@@ -249,7 +251,7 @@ class TransactionSliverList extends StatelessWidget {
   Widget build(BuildContext context) {
     final transactions = context.watch<OinkProvider>().transactions;
     // Remove decimals for CLP
-    final currencyFormat = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+    final currencyFormat = AppFormatters.currency;
 
     if (transactions.isEmpty) {
       return const SliverToBoxAdapter(

@@ -6,6 +6,7 @@ import '../models/transaction.dart';
 import '../models/category.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
+import '../utils/formatters.dart';
 import '../utils/constants.dart';
 import 'add_transaction_screen.dart';
 
@@ -99,7 +100,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   itemBuilder: (context, index) {
                     final tx = transactions[index];
                     final category = provider.getCategory(tx.categoryId);
-                    final formatter = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+                    final formatter = AppFormatters.currency;
 
                     return Dismissible(
                       key: Key(tx.id),

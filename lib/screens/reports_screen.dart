@@ -7,6 +7,7 @@ import '../models/transaction.dart';
 import '../models/category.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
+import '../utils/formatters.dart';
 import '../utils/constants.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -65,7 +66,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final expense = monthTransactions.where((tx) => tx.type == 'expense').fold(0.0, (sum, tx) => sum + tx.amount);
           final balance = income - expense;
           
-          final formatter = NumberFormat.currency(locale: 'es_CL', symbol: '\$', decimalDigits: 0);
+          final formatter = AppFormatters.currency;
 
           // Group expenses by category
           final Map<String, double> categoryExpenses = {};

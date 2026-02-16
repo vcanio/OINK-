@@ -118,7 +118,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               style: AppStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: AppTheme.primaryColor,
+                color: Colors.white,
               ),
             ),
           ),
