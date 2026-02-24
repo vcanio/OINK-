@@ -1,18 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
-import '../providers/oink_provider.dart';
+import '../providers/goals_provider.dart';
 import '../models/savings_goal.dart';
+import '../models/category_type.dart';
 import '../models/transaction.dart';
+import '../models/transaction_type.dart';
 import '../utils/formatters.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
 import '../utils/constants.dart';
+import '../widgets/add_goal_bottom_sheet.dart';
+import 'dart:math';
+import 'package:confetti/confetti.dart';
 
-class GoalsScreen extends StatelessWidget {
+class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
+
+  @override
+  State<GoalsScreen> createState() => _GoalsScreenState();
+}
+
+class _GoalsScreenState extends State<GoalsScreen> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +52,31 @@ class GoalsScreen extends StatelessWidget {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: Consumer<OinkProvider>(
-        builder: (context, provider, child) {
-          final goals = provider.savingsGoals;
-          final formatter = AppFormatters.currency;
+      body: Stack(
+        children: [
+          Consumer<GoalsProvider>(
+            builder: (context, provider, child) {
+              final goals = provider.savingsGoals;
+              final formatter = AppFormatters.currency;
 
           if (goals.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("🎯", style: TextStyle(fontSize: 48)),
+                  const Icon(Icons.track_changes_rounded, size: 48, color: AppTheme.textSecondary),
                   const SizedBox(height: AppConstants.paddingM),
                   Text(
                     "No tienes metas aún",
-                    style: AppStyles.heading3.copyWith(color: AppTheme.textSecondary),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                      fontSize: 18,
+                    ),
                   ),
                   const SizedBox(height: AppConstants.paddingS),
                   Text(
                     "¡Crea una para empezar a ahorrar!",
-                    style: AppStyles.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
@@ -59,7 +89,7 @@ class GoalsScreen extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final goal = goals[index];
-              final progress = goal.savedAmount / goal.targetAmount;
+              final progress = goal.targetAmount > 0 ? goal.savedAmount / goal.targetAmount : 0.0;
               final isCompleted = progress >= 1.0;
 
               return Dismissible(
@@ -68,19 +98,20 @@ class GoalsScreen extends StatelessWidget {
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
-                  color: AppTheme.errorColor.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.error.withOpacity(0.1),
                   child: const Icon(Icons.delete, color: AppTheme.errorColor),
                 ),
                 confirmDismiss: (direction) async {
+                  await HapticFeedback.mediumImpact();
                   return await showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text("¿Borrar meta?"),
                       content: const Text("Esta acción no se puede deshacer"),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+                        TextButton(onPressed: () => context.pop(false), child: const Text("Cancelar")),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true), 
+                          onPressed: () => context.pop(true), 
                           child: Text("Borrar", style: TextStyle(color: AppTheme.errorColor)),
                         ),
                       ],
@@ -95,7 +126,7 @@ class GoalsScreen extends StatelessWidget {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(AppConstants.paddingM),
-                  decoration: AppStyles.cardDecoration,
+                  decoration: AppStyles.getCardDecoration(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -116,17 +147,17 @@ class GoalsScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   goal.name,
-                                  style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   "Meta: ${formatter.format(goal.targetAmount)}",
-                                  style: AppStyles.bodyMedium,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ],
                             ),
                           ),
                           if (isCompleted)
-                            const Text("🎉", style: TextStyle(fontSize: 24)),
+                            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 24),
                         ],
                       ),
                       const SizedBox(height: AppConstants.paddingM),
@@ -135,7 +166,7 @@ class GoalsScreen extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: progress.clamp(0.0, 1.0),
                           minHeight: 8,
-                          backgroundColor: Colors.grey.shade100,
+                          backgroundColor: Theme.of(context).dividerColor.withOpacity(0.3),
                           valueColor: AlwaysStoppedAnimation<Color>(Color(goal.color)),
                         ),
                       ),
@@ -145,14 +176,14 @@ class GoalsScreen extends StatelessWidget {
                         children: [
                           Text(
                             formatter.format(goal.savedAmount),
-                            style: AppStyles.bodyLarge.copyWith(
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Color(goal.color),
                             ),
                           ),
                           Text(
                             "${(progress * 100).toStringAsFixed(0)}%",
-                            style: AppStyles.label,
+                            style: Theme.of(context).textTheme.labelSmall,
                           ),
                         ],
                       ),
@@ -183,263 +214,32 @@ class GoalsScreen extends StatelessWidget {
           );
         },
       ),
+      Align(
+        alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showAddGoalDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final amountController = TextEditingController();
-    Color selectedColor = Colors.blue;
-    // Define a list of vibrant colors for goals
-    final List<Color> goalColors = [
-      Colors.blue,
-      Colors.green,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.teal,
-      Colors.redAccent,
-      Colors.indigo,
-    ];
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.85,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 24,
-                right: 24,
-                top: 24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Title
-                  Text(
-                    "Nueva Meta de Ahorro",
-                    style: GoogleFonts.nunito(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Define tu objetivo y empieza a ahorrar",
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-
-                  // Name Input
-                  Text("Nombre", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      hintText: "Ej. Viaje a Japón",
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      prefixIcon: const Icon(Icons.stars_rounded, color: Colors.grey),
-                    ),
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Amount Input
-                  Text("Monto Objetivo", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      ThousandsSeparatorInputFormatter(),
-                    ],
-                    decoration: InputDecoration(
-                      hintText: "0",
-                      prefixText: "\$ ",
-                      prefixStyle: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Color Picker
-                  Text("Color", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 50,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: goalColors.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) {
-                        final color = goalColors[index];
-                        final isSelected = selectedColor == color;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedColor = color;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                              border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: color.withOpacity(0.4),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      )
-                                    ]
-                                  : null,
-                            ),
-                            child: isSelected
-                                ? const Icon(Icons.check, color: Colors.white)
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: Text(
-                            "Cancelar",
-                            style: GoogleFonts.nunito(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final name = nameController.text.trim();
-                            final amountString = amountController.text.replaceAll('.', '');
-                            final amount = double.tryParse(amountString) ?? 0;
-                            
-                            if (name.isNotEmpty && amount > 0) {
-                              final newGoal = SavingsGoal.create(
-                                name: name,
-                                targetAmount: amount,
-                                startDate: DateTime.now(),
-                                endDate: DateTime.now().add(const Duration(days: 365)),
-                                color: selectedColor.value,
-                              );
-                              Provider.of<OinkProvider>(context, listen: false).addSavingsGoal(newGoal);
-                              Navigator.pop(context);
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("¡Meta '$name' creada con éxito! 🚀"),
-                                  backgroundColor: Colors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              );
-                            } else {
-                               // Show simple validation error
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text("Por favor ingresa un nombre y un monto válido"),
-                                  backgroundColor: Colors.redAccent,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            "Crear Meta",
-                            style: GoogleFonts.nunito(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
+        return const AddGoalBottomSheet();
       },
     );
   }
 
-  void _showAddFundsDialog(BuildContext context, SavingsGoal goal, OinkProvider provider) {
+  void _showAddFundsDialog(BuildContext context, SavingsGoal goal, GoalsProvider provider) {
     final amountController = TextEditingController();
 
     showDialog(
@@ -458,7 +258,7 @@ class GoalsScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
@@ -478,23 +278,15 @@ class GoalsScreen extends StatelessWidget {
     );
   }
 
-  void _addFunds(BuildContext context, SavingsGoal goal, OinkProvider provider, double amount) {
-     final updatedGoal = goal.copyWith(
-      savedAmount: goal.savedAmount + amount,
-    );
-    provider.updateSavingsGoal(updatedGoal);
-
-    // Create expense transaction for the savings
-    final transaction = Transaction.create(
-      amount: amount,
-      type: 'expense',
-      categoryId: 'savings', // Defined in category.dart
-      description: 'Abono a meta: ${goal.name}',
-      date: DateTime.now(),
-    );
-    provider.addTransaction(transaction);
-
-    Navigator.pop(context);
+  void _addFunds(BuildContext context, SavingsGoal goal, GoalsProvider provider, double amount) {
+    final previousAmount = goal.savedAmount;
+    provider.addFundsToGoal(goal, amount);
+    
+    context.pop();
+    
+    if (previousAmount < goal.targetAmount && (previousAmount + amount) >= goal.targetAmount) {
+      _confettiController.play();
+    }
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("¡Abonado \$${amount.toStringAsFixed(0)} a ${goal.name}!")),

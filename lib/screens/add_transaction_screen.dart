@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
-import '../providers/oink_provider.dart';
+import 'package:go_router/go_router.dart';
+
+import '../providers/transactions_provider.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../models/transaction_type.dart';
 import '../utils/formatters.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
@@ -21,7 +23,7 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  String _type = 'expense'; // expense, income
+  TransactionType _type = TransactionType.expense;
   double _amount = 0;
   String? _selectedCategoryId;
   String _description = '';
@@ -29,15 +31,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
 
+
+  bool _isInstallment = false;
+  int _installments = 1;
+
+  bool _isRecurring = false;
+  String _frequency = 'monthly';
+
   @override
   void initState() {
     super.initState();
+    final provider = Provider.of<TransactionsProvider>(context, listen: false);
+
+
     if (widget.transaction != null) {
       _type = widget.transaction!.type;
       _amount = widget.transaction!.amount;
       _selectedCategoryId = widget.transaction!.categoryId;
       _description = widget.transaction!.description;
       _date = widget.transaction!.date;
+      _isRecurring = widget.transaction!.isRecurring;
+      if (widget.transaction!.frequency != null) {
+        _frequency = widget.transaction!.frequency!;
+      }
       
       final formatter = NumberFormat('#,###', 'es_CL');
       _amountController = TextEditingController(text: formatter.format(_amount));
@@ -58,326 +74,455 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void _saveTransaction() {
     if (_amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Ingresa un monto válido")),
+        const SnackBar(content: Text("Ingresa un monto válido"), backgroundColor: AppTheme.errorColor),
       );
       return;
     }
+    
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Selecciona una categoría")),
+        const SnackBar(content: Text("Por favor, selecciona una categoría"), backgroundColor: AppTheme.errorColor),
       );
       return;
     }
 
     if (widget.transaction != null) {
-      // Update existing transaction
       final updatedTransaction = Transaction(
         id: widget.transaction!.id,
         amount: _amount,
-        type: _type,
+        typeString: _type.name,
         categoryId: _selectedCategoryId!,
         description: _description,
         date: _date,
         createdAt: widget.transaction!.createdAt,
+        walletId: 'default',
+        isRecurring: _isRecurring,
+        frequency: _isRecurring ? _frequency : null,
+        groupId: widget.transaction!.groupId,
+        recurrenceId: widget.transaction!.recurrenceId,
       );
-      Provider.of<OinkProvider>(context, listen: false).updateTransaction(updatedTransaction);
+      Provider.of<TransactionsProvider>(context, listen: false).updateTransaction(updatedTransaction);
     } else {
-      // Create new transaction
       final newTransaction = Transaction.create(
         amount: _amount,
         type: _type,
         categoryId: _selectedCategoryId!,
         description: _description,
         date: _date,
+        walletId: 'default',
+        isRecurring: _isRecurring,
+        frequency: _isRecurring ? _frequency : null,
       );
-      Provider.of<OinkProvider>(context, listen: false).addTransaction(newTransaction);
+      Provider.of<TransactionsProvider>(context, listen: false).addTransaction(newTransaction, installments: _isInstallment ? _installments : 1);
     }
     
-    Navigator.pop(context);
+    context.pop();
   }
+
+  bool get _isValid => _amount > 0 && _selectedCategoryId != null;
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<OinkProvider>(context);
-    final categories = defaultCategories.where((c) => c.type == _type).toList();
+    final provider = context.watch<TransactionsProvider>();
+    final categories = provider.allCategories.where((c) => c.type == _type).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerColor = _type == TransactionType.expense ? AppTheme.expenseColor : AppTheme.incomeColor;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.transaction != null ? "Editar Movimiento" : "Nuevo Movimiento"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          widget.transaction != null ? "Editar Movimiento" : "Nuevo Movimiento",
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
-        actions: [
-          TextButton(
-            onPressed: _saveTransaction,
-            child: Text(
-              "Guardar",
-              style: AppStyles.bodyLarge.copyWith(
-                fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                color: AppTheme.primaryColor,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Selector de Tipo (Gasto / Ingreso)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingL),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
+                  ]
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildTypeButton("Gasto", TransactionType.expense)),
+                    Expanded(child: _buildTypeButton("Ingreso", TransactionType.income)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Toggle Type
-          const SizedBox(height: AppConstants.paddingM),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              children: [
-                Expanded(child: _buildTypeButton("Gasto", 'expense')),
-                Expanded(child: _buildTypeButton("Ingreso", 'income')),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Amount Input
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                Text(
-                  "Monto",
-                  style: AppStyles.label.copyWith(
-                    fontWeight: FontWeight.bold,
+            
+            const SizedBox(height: 24),
+            
+            // 2. Ingreso de Monto Gigante
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingL),
+              child: Column(
+                children: [
+                  Text(
+                    "Monto",
+                    style: AppStyles.label.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color),
                   ),
-                ),
-                TextField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    ThousandsSeparatorInputFormatter(),
-                  ],
-                  textAlign: TextAlign.center,
-                  style: AppStyles.moneyBig.copyWith(
-                    color: _type == 'expense' ? AppTheme.errorColor : Colors.green.shade400,
-                  ),
-                  decoration: const InputDecoration(
-                    prefixText: "\$",
-                    border: InputBorder.none,
-                    hintText: "0",
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      String cleanedValue = value.replaceAll('.', '');
-                      _amount = double.tryParse(cleanedValue) ?? 0;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Categories Grid
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+                  TextField(
+                    controller: _amountController,
+                    autofocus: widget.transaction == null, // Autofocus solo si es nuevo (Rapidez)
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.done,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      ThousandsSeparatorInputFormatter(),
+                    ],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      color: headerColor,
+                    ),
+                    decoration: InputDecoration(
+                      prefixText: "\$ ",
+                      prefixStyle: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: headerColor),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintText: "0",
+                      hintStyle: TextStyle(color: headerColor.withOpacity(0.3)),
+                      filled: false,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        String cleanedValue = value.replaceAll('.', '');
+                        _amount = double.tryParse(cleanedValue) ?? 0;
+                      });
+                    },
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Categoría",
-                    style: GoogleFonts.nunito(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // 3. Detalles (Categoría, Nota, Fecha) en un contenedor tipo BottomSheet
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.surfaceDark : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        childAspectRatio: 0.8,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Categoría",
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        final isSelected = _selectedCategoryId == category.id;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategoryId = category.id;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Color(category.color) : Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected ? Colors.transparent : Colors.grey.shade200,
-                                    width: 2,
+                      const SizedBox(height: 16),
+                      
+                      // Grid de Categorías compacta
+                      GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final isSelected = _selectedCategoryId == category.id;
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              setState(() => _selectedCategoryId = category.id);
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Color(category.color) : Color(category.color).withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                    border: isSelected ? Border.all(color: Color(category.color).withOpacity(0.3), width: 4) : null,
                                   ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: Color(category.color).withOpacity(0.4),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ]
-                                      : null,
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    category.icon,
+                                    size: 26,
+                                    color: isSelected ? Colors.white : Color(category.color),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  category.name,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontSize: 11,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                    color: isSelected ? Theme.of(context).textTheme.bodyLarge?.color : Theme.of(context).textTheme.bodyMedium?.color,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Selector de Fecha y Nota en fila (para ahorrar espacio)
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              controller: _descriptionController,
+                              textInputAction: TextInputAction.done,
+                              decoration: InputDecoration(
+                                hintText: "Nota (opcional)",
+                                prefixIcon: const Icon(Icons.edit_note_rounded),
+                                filled: true,
+                                fillColor: Theme.of(context).scaffoldBackgroundColor,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                              ),
+                              onChanged: (value) => _description = value,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 1,
+                            child: GestureDetector(
+                              onTap: () async {
+                                FocusScope.of(context).unfocus(); // Ocultar teclado
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _date,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (picked != null) setState(() => _date = picked);
+                              },
+                              child: Container(
+                                height: 56, // Misma altura que el input de nota
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).scaffoldBackgroundColor,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 alignment: Alignment.center,
-                                child: Text(
-                                  category.icon,
-                                  style: const TextStyle(fontSize: 28),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.calendar_today_rounded, size: 18, color: Theme.of(context).textTheme.bodyLarge?.color),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      DateFormat('dd MMM').format(_date),
+                                      style: AppStyles.label.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                category.name,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  fontSize: 11,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected ? Colors.black87 : Colors.grey.shade600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Description
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      hintText: "Descripción (opcional)",
-                      prefixIcon: const Icon(Icons.edit_rounded),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    onChanged: (value) => _description = value,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Date
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _date,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _date = picked;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_rounded, color: Colors.grey),
-                          const SizedBox(width: 12),
-                          Text(
-                            DateFormat.yMMMMd('es_CL').format(_date),
-                            style: GoogleFonts.nunito(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      
+                      const SizedBox(height: 24),
+                      Text(
+                        "Opciones Avanzadas",
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+                      ),
+                      const SizedBox(height: 12),
+                      
+
+
+                      // Installments (Solo para gastos)
+                      if (_type == TransactionType.expense && widget.transaction == null) ...[
+                        _buildAdvancedOptionRow(
+                          icon: Icons.credit_score_rounded,
+                          title: "¿Es compra en cuotas?",
+                          trailing: Switch(
+                            value: _isInstallment,
+                            activeColor: AppTheme.expenseColor,
+                            onChanged: (val) => setState(() => _isInstallment = val),
+                          ),
+                        ),
+                        if (_isInstallment)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 40, bottom: 8),
+                            child: Row(
+                              children: [
+                                Text("Cantidad de cuotas:", style: AppStyles.label),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Slider(
+                                    value: _installments.toDouble(),
+                                    min: 1,
+                                    max: 24,
+                                    divisions: 23,
+                                    label: "$_installments",
+                                    activeColor: AppTheme.expenseColor,
+                                    onChanged: (val) => setState(() => _installments = val.toInt()),
+                                  ),
+                                ),
+                                Text("$_installments", style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                      ],
+
+                      // Recurrence
+                      _buildAdvancedOptionRow(
+                        icon: Icons.repeat_rounded,
+                        title: "Movimiento Recurrente",
+                        trailing: Switch(
+                          value: _isRecurring,
+                          activeColor: headerColor,
+                          onChanged: (val) => setState(() => _isRecurring = val),
+                        ),
+                      ),
+                      if (_isRecurring)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 40, bottom: 8),
+                          child: Row(
+                            children: [
+                              Text("Frecuencia:", style: AppStyles.label),
+                              const Spacer(),
+                              DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _frequency,
+                                  isDense: true,
+                                  items: const [
+                                    DropdownMenuItem(value: 'daily', child: Text("Diaria")),
+                                    DropdownMenuItem(value: 'weekly', child: Text("Semanal")),
+                                    DropdownMenuItem(value: 'monthly', child: Text("Mensual")),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _frequency = val);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      
+                      const SizedBox(height: 100), // Espacio para que el fab no tape contenido
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+      
+      // Botón Gigante y de fácil alcance
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: _isValid ? () {
+              HapticFeedback.mediumImpact();
+              _saveTransaction();
+            } : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isValid ? headerColor : Theme.of(context).disabledColor.withOpacity(0.2),
+              foregroundColor: Colors.white,
+              elevation: _isValid ? 4 : 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            child: Text(
+              "Guardar Movimiento",
+              style: AppStyles.bodyLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTypeButton(String label, String value) {
+  Widget _buildTypeButton(String label, TransactionType value) {
     final isSelected = _type == value;
-    final color = value == 'expense' ? Colors.red : Colors.green;
+    final color = value == TransactionType.expense ? AppTheme.expenseColor : AppTheme.incomeColor;
+    
     return GestureDetector(
       onTap: () {
+        HapticFeedback.selectionClick();
         setState(() {
           _type = value;
-          _selectedCategoryId = null; // Reset category when switching type
+          _selectedCategoryId = null; // Reiniciar categoría al cambiar
         });
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(26),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: AppStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.bold,
-            color: isSelected ? color : AppTheme.textSecondary,
+            color: isSelected ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
       ),
     );
   }
+
+  Widget _buildAdvancedOptionRow({
+    required IconData icon,
+    required String title,
+    required Widget trailing,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: Theme.of(context).disabledColor),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(title, style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+          ),
+          trailing,
+        ],
+      ),
+    );
+  }
 }
-
-

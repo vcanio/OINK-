@@ -45,17 +45,21 @@ class AppStyles {
   );
 
   // Box Decorations
-  static BoxDecoration cardDecoration = BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(AppConstants.radiusM),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  );
+  // Box Decorations
+  static BoxDecoration getCardDecoration(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      boxShadow: [
+        BoxShadow(
+          color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
 
   static BoxDecoration gradientCardDecoration = BoxDecoration(
     gradient: const LinearGradient(

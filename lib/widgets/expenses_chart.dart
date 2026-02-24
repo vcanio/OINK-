@@ -56,7 +56,7 @@ class ExpensesChart extends StatelessWidget {
                     final percentage = (entry.value / totalExpenses) * 100;
                     
                     return PieChartSectionData(
-                      color: category.color,
+                      color: Color(category.color),
                       value: entry.value,
                       title: '${percentage.toStringAsFixed(0)}%',
                       radius: 50,
@@ -89,7 +89,7 @@ class ExpensesChart extends StatelessWidget {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: category.color,
+                        color: Color(category.color),
                         shape: BoxShape.circle,
                       ),
                     ),

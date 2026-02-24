@@ -9,12 +9,17 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/oink_provider.dart';
+import '../providers/transactions_provider.dart';
+import '../providers/goals_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/transaction.dart';
 import '../models/savings_goal.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_styles.dart';
 import '../utils/constants.dart';
 
+
+import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -28,7 +33,70 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionHeader("Datos"),
+          _buildSectionHeader(context, "Personalización"),
+          _buildSettingsTile(
+            context,
+            icon: Icons.account_balance_wallet_rounded,
+            title: "Configurar Presupuestos",
+            subtitle: "Define límites mensuales para tus categorías",
+            onTap: () => context.push('/budgets'),
+          ),
+          _buildSettingsTile(
+            context,
+            icon: Icons.category_rounded,
+            title: "Administrar Categorías",
+            subtitle: "Crea y edita tus propias categorías",
+            onTap: () => context.push('/categories-config'),
+          ),
+          _buildSettingsTile(
+            context,
+            icon: Icons.event_repeat_rounded,
+            title: "Mis Suscripciones",
+            subtitle: "Gestiona tus pagos regulares y recurrentes",
+            onTap: () => context.push('/subscriptions'),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(context, "Notificaciones"),
+          Consumer<SettingsProvider>(
+            builder: (context, settings, child) {
+              return Column(
+                children: [
+                  SwitchListTile(
+                    title: Text("Recordatorio Diario", style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    subtitle: const Text("Recibe una alerta para registrar tus gastos"),
+                    value: settings.dailyReminderEnabled,
+                    activeColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusM)),
+                    tileColor: Theme.of(context).cardColor,
+                    onChanged: (bool value) async {
+                      await settings.toggleDailyReminder(value);
+                    },
+                  ),
+                  if (settings.dailyReminderEnabled) ...[
+                    const SizedBox(height: 8),
+                    ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusM)),
+                      tileColor: Theme.of(context).cardColor,
+                      leading: const Icon(Icons.access_time_rounded),
+                      title: const Text("Hora del recordatorio"),
+                      subtitle: Text("${settings.dailyReminderTime.hour.toString().padLeft(2, '0')}:${settings.dailyReminderTime.minute.toString().padLeft(2, '0')}"),
+                      onTap: () async {
+                        final TimeOfDay? time = await showTimePicker(
+                          context: context,
+                          initialTime: settings.dailyReminderTime,
+                        );
+                        if (time != null) {
+                          await settings.setDailyReminderTime(time);
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              );
+            }
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(context, "Datos"),
           _buildSettingsTile(
             context,
             icon: Icons.upload_rounded,
@@ -55,19 +123,19 @@ class SettingsScreen extends StatelessWidget {
           
           const SizedBox(height: 32),
           
-          _buildSectionHeader("Acerca de"),
+          _buildSectionHeader(context, "Acerca de"),
           _buildSettingsTile(
             context,
             icon: Icons.info_outline_rounded,
             title: "OINK!",
-            subtitle: "Versión 1.0.0",
+            subtitle: "Versión ${AppConstants.appVersion}",
             onTap: () {},
           ),
           const SizedBox(height: 16),
           Center(
             child: Text(
-              "Hecho con 🐷 y Flutter",
-              style: GoogleFonts.nunito(color: Colors.grey),
+              "Hecho por Vicente Canio",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
             ),
           ),
         ],
@@ -75,16 +143,16 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
         title.toUpperCase(),
-        style: AppStyles.label.copyWith(
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: Colors.grey.shade500,
           letterSpacing: 1.2,
+          color: Theme.of(context).textTheme.bodySmall?.color,
         ),
       ),
     );
@@ -95,30 +163,32 @@ class SettingsScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    Color color = AppTheme.textPrimary,
+    Color? color,
   }) {
+    final effectiveColor = color ?? Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textPrimary;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: AppStyles.cardDecoration,
+      decoration: AppStyles.getCardDecoration(context),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: effectiveColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: color),
+          child: Icon(icon, color: effectiveColor),
         ),
         title: Text(
           title,
-          style: AppStyles.bodyLarge.copyWith(
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: color,
+            color: effectiveColor,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: AppStyles.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusM)),
@@ -126,11 +196,14 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+
+
   Future<void> _exportData(BuildContext context) async {
     try {
-      final provider = Provider.of<OinkProvider>(context, listen: false);
-      final transactions = provider.transactions;
-      final goals = provider.savingsGoals;
+      final transactionsProvider = Provider.of<TransactionsProvider>(context, listen: false);
+      final goalsProvider = Provider.of<GoalsProvider>(context, listen: false);
+      final transactions = transactionsProvider.transactions;
+      final goals = goalsProvider.savingsGoals;
 
       final data = {
         'version': 1,
@@ -138,7 +211,7 @@ class SettingsScreen extends StatelessWidget {
         'transactions': transactions.map((t) => {
           'id': t.id,
           'amount': t.amount,
-          'type': t.type,
+          'type': t.typeString,
           'categoryId': t.categoryId,
           'description': t.description,
           'date': t.date.toIso8601String(),
@@ -193,6 +266,8 @@ class SettingsScreen extends StatelessWidget {
 
         if (data['version'] == 1) {
           final provider = Provider.of<OinkProvider>(context, listen: false);
+          final transactionsProvider = Provider.of<TransactionsProvider>(context, listen: false);
+          final goalsProvider = Provider.of<GoalsProvider>(context, listen: false);
           
           // Clear current data
           await provider.wipeData();
@@ -200,16 +275,24 @@ class SettingsScreen extends StatelessWidget {
           // Import Transactions
           final transactionsList = data['transactions'] as List;
           for (var item in transactionsList) {
+            
+            // Limpieza de IDs antiguos
+            String rawCatId = item['categoryId'];
+            if (rawCatId == 'other_expense') rawCatId = 'otherExpense';
+            if (rawCatId == 'other_income') rawCatId = 'otherIncome';
+            if (rawCatId == 'gift_expense') rawCatId = 'giftExpense';
+            if (rawCatId == 'gift_income') rawCatId = 'giftIncome';
+
             final tx = Transaction(
               id: item['id'],
               amount: item['amount'],
-              type: item['type'],
-              categoryId: item['categoryId'],
+              typeString: item['type'],
+              categoryId: rawCatId, // Usamos el ID limpio
               description: item['description'],
               date: DateTime.parse(item['date']),
               createdAt: DateTime.parse(item['createdAt']),
             );
-            await provider.addTransaction(tx);
+            await transactionsProvider.addTransaction(tx);
           }
 
           // Import Goals
@@ -224,7 +307,7 @@ class SettingsScreen extends StatelessWidget {
               endDate: DateTime.parse(item['endDate']),
               color: item['color'],
             );
-            await provider.addSavingsGoal(goal);
+            await goalsProvider.addSavingsGoal(goal);
           }
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -250,9 +333,9 @@ class SettingsScreen extends StatelessWidget {
         title: const Text("¿Estás seguro?"),
         content: const Text("Se borrarán TODOS tus datos permanentemente."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+          TextButton(onPressed: () => context.pop(false), child: const Text("Cancelar")),
           TextButton(
-            onPressed: () => Navigator.pop(context, true), 
+            onPressed: () => context.pop(true), 
             child: const Text("Borrar Todo", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],

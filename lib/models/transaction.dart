@@ -1,84 +1,80 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+import 'transaction_type.dart';
 
+part 'transaction.g.dart';
+
+@HiveType(typeId: 0)
 class Transaction {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final double amount;
-  final String type; // 'income' or 'expense'
+  @HiveField(2)
+  final String typeString; 
+  @HiveField(3)
   final String categoryId;
+  @HiveField(4)
   final String description;
+  @HiveField(5)
   final DateTime date;
+  @HiveField(6)
   final DateTime createdAt;
+  @HiveField(7, defaultValue: false)
+  final bool isRecurring;
+  @HiveField(8, defaultValue: null)
+  final String? frequency; // 'monthly', 'weekly', etc.
+  @HiveField(9, defaultValue: 'default')
+  final String walletId;
+  @HiveField(10, defaultValue: null)
+  final String? groupId;
+  @HiveField(11, defaultValue: null)
+  final String? recurrenceId;
 
   Transaction({
     required this.id,
     required this.amount,
-    required this.type,
+    required this.typeString,
     required this.categoryId,
     this.description = '',
     required this.date,
     required this.createdAt,
+    this.isRecurring = false,
+    this.frequency,
+    this.walletId = 'default',
+    this.groupId,
+    this.recurrenceId,
   });
 
-  bool get isExpense => type == 'expense';
+  TransactionType get type => typeString == 'income' ? TransactionType.income : TransactionType.expense;
+
+  bool get isExpense => type == TransactionType.expense;
 
   factory Transaction.create({
     required double amount,
-    required String type,
+    required TransactionType type,
     required String categoryId,
     String description = '',
     required DateTime date,
+    bool isRecurring = false,
+    String? frequency,
+    String walletId = 'default',
+    String? groupId,
+    String? recurrenceId,
   }) {
     return Transaction(
       id: const Uuid().v4(),
       amount: amount,
-      type: type,
+      typeString: type.name,
       categoryId: categoryId,
       description: description,
       date: date,
       createdAt: DateTime.now(),
+      isRecurring: isRecurring,
+      frequency: frequency,
+      walletId: walletId,
+      groupId: groupId,
+      recurrenceId: recurrenceId,
     );
-  }
-}
-
-class TransactionAdapter extends TypeAdapter<Transaction> {
-  @override
-  final int typeId = 0;
-
-  @override
-  Transaction read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-    return Transaction(
-      id: fields[0] as String,
-      amount: fields[1] as double,
-      type: fields[2] as String,
-      categoryId: fields[3] as String,
-      description: fields[4] as String,
-      date: fields[5] as DateTime,
-      createdAt: fields[6] as DateTime,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Transaction obj) {
-    writer
-      ..writeByte(7)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.amount)
-      ..writeByte(2)
-      ..write(obj.type)
-      ..writeByte(3)
-      ..write(obj.categoryId)
-      ..writeByte(4)
-      ..write(obj.description)
-      ..writeByte(5)
-      ..write(obj.date)
-      ..writeByte(6)
-      ..write(obj.createdAt);
   }
 }
